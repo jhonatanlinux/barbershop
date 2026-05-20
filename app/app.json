@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Barbershop",
+    "slug": "barbershop-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0c0b09"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.barbershop.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0c0b09"
+      },
+      "package": "com.barbershop.app",
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "seu-project-id-aqui"
+      }
+    }
+  }
+}
