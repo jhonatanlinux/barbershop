@@ -10,6 +10,8 @@ from mock_data import CONFIG, RESGATES, add_historico, get_catalogo_item, get_cl
 
 router = APIRouter()
 
+LIMITE_RESGATE_MSG = "Você já resgatou itens. Aguarde aprovação da barbearia."
+
 
 class ResgateBody(BaseModel):
     item_id: int
@@ -23,9 +25,19 @@ class AutorizarBody(BaseModel):
 async def solicitar(body: ResgateBody, payload: dict = Depends(require_cliente)):
     cpf = payload["cpf"]
     if using_database():
-        with get_conn() as conn:
-            result = conn.execute("select fn_solicitar_resgate(%s, %s) as data", (cpf, body.item_id)).fetchone()
-            conn.commit()
+        try:
+            with get_conn() as conn:
+                result = conn.execute("select fn_solicitar_resgate(%s, %s) as data", (cpf, body.item_id)).fetchone()
+                conn.commit()
+        except Exception as exc:
+            msg = str(exc).lower()
+            if "limite de solicit" in msg:
+                raise HTTPException(400, LIMITE_RESGATE_MSG) from exc
+            if "pontos insuficientes" in msg:
+                raise HTTPException(400, "Pontos insuficientes para este resgate.") from exc
+            if "item indisponivel" in msg or "item indisponível" in msg:
+                raise HTTPException(400, "Item indisponível.") from exc
+            raise
         return {**result["data"], "status": "pendente"}
 
     cliente = get_cliente(cpf)
@@ -39,7 +51,7 @@ async def solicitar(body: ResgateBody, payload: dict = Depends(require_cliente))
     limite = CONFIG["limite_solicitacoes"]["valor"]
     pendentes = [resgate for resgate in RESGATES if resgate["cpf"] == cpf and resgate["status"] == "pendente"]
     if limite > 0 and len(pendentes) >= limite:
-        raise HTTPException(400, f"Você já tem {len(pendentes)} solicitação(ões) pendente(s)")
+        raise HTTPException(400, LIMITE_RESGATE_MSG)
 
     if cliente["pontos"] < item["custo_pontos"]:
         raise HTTPException(

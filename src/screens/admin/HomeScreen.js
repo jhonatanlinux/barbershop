@@ -563,45 +563,25 @@ function ClientesTab({
         {lista.map((c, i) => (
           <View
             key={c.cpf}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: S.sm,
-              padding: S.sm,
-              paddingHorizontal: S.md,
-              borderBottomWidth: i < lista.length - 1 ? 1 : 0,
-              borderBottomColor: C.border,
-            }}
+            style={[clienteRow.item, i < lista.length - 1 && clienteRow.sep]}
           >
-            <Avatar nome={c.nome} tipo={c.tipo} size={34} />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text
-                style={{ fontSize: 13, fontWeight: "600", color: C.cream }}
-                numberOfLines={1}
-              >
-                {c.nome}
-              </Text>
-              <Text style={{ fontSize: 11, color: C.muted }}>
-                {fmtCPF(c.cpf)}
-              </Text>
+            <View style={clienteRow.top}>
+              <Avatar nome={c.nome} tipo={c.tipo} size={38} />
+              <View style={clienteRow.info}>
+                <Text style={clienteRow.nome} numberOfLines={1}>
+                  {c.nome || "Cliente sem nome"}
+                </Text>
+                <Text style={clienteRow.cpf}>{fmtCPF(c.cpf)}</Text>
+              </View>
+              <Text style={clienteRow.pontos}>{c.pontos}</Text>
             </View>
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: "900",
-                color: C.gold,
-                minWidth: 42,
-                textAlign: "right",
-              }}
-            >
-              {c.pontos}
-            </Text>
+            <View style={clienteRow.actions}>
             <Button
               title={c.tipo === "mensalista" ? "+3" : "+10"}
               variant="gold"
               small
               onPress={() => onLancar(c.cpf)}
+              style={clienteRow.actionBtn}
             />
             <TouchableOpacity
               onPress={() => onToggleMensalista(c)}
@@ -616,13 +596,20 @@ function ClientesTab({
                 {c.tipo === "mensalista" ? "Mensalista" : "Regular"}
               </Text>
             </TouchableOpacity>
-            <Button title="Ver" small onPress={() => onVer(c.cpf)} />
+            <Button
+              title="Ver"
+              small
+              onPress={() => onVer(c.cpf)}
+              style={clienteRow.actionBtn}
+            />
             <Button
               title="Remover"
               variant="red"
               small
               onPress={() => onRemover(c)}
+              style={clienteRow.removeBtn}
             />
+            </View>
           </View>
         ))}
       </Card>
@@ -1075,6 +1062,55 @@ const inp_s = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: S.sm,
     fontSize: 14,
+  },
+});
+const clienteRow = StyleSheet.create({
+  item: {
+    padding: S.md,
+    gap: S.sm,
+  },
+  sep: {
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  top: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: S.sm,
+  },
+  info: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nome: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: C.cream,
+  },
+  cpf: {
+    fontSize: 12,
+    color: C.muted,
+    marginTop: 2,
+  },
+  pontos: {
+    minWidth: 56,
+    textAlign: "right",
+    fontSize: 22,
+    fontWeight: "900",
+    color: C.gold,
+  },
+  actions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: S.sm,
+    paddingLeft: 46,
+  },
+  actionBtn: {
+    minWidth: 68,
+  },
+  removeBtn: {
+    minWidth: 92,
   },
 });
 const cliCheck = StyleSheet.create({
