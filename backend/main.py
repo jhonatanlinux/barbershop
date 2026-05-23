@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from db import using_database
 from routers import auth, catalogo, clientes, config, cortes, mensalistas, resgates
 
 ROUTERS = (
@@ -32,9 +33,13 @@ for router, prefix, tag in ROUTERS:
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "app": "Barbearia Corte Fino API", "modo": "MOCK"}
+    return {
+        "status": "ok",
+        "app": "Barbearia Corte Fino API",
+        "modo": "DATABASE" if using_database() else "MOCK",
+    }
 
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy"}
+    return {"status": "healthy", "database": using_database()}

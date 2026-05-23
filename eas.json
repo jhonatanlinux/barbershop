@@ -7,6 +7,9 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://barbershop-api-356y.onrender.com"
+      },
       "android": { "buildType": "apk" },
       "ios": { "simulator": false }
     },
