@@ -44,11 +44,13 @@ export default function ClienteLoginScreen({ navigation }) {
     <SafeAreaView style={s.root} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 24}
       >
         <ScrollView
           contentContainerStyle={s.scroll}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           {/* Logo */}
           <View style={s.logoArea}>
@@ -100,7 +102,12 @@ export default function ClienteLoginScreen({ navigation }) {
 }
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
-  scroll: { flexGrow: 1, justifyContent: "center", padding: S.xl },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: S.xl,
+    paddingBottom: S.xxl + 72,
+  },
   logoArea: { alignItems: "center", marginBottom: S.sm },
   logoImg: { width: "100%", height: 130 },
   tagline: {

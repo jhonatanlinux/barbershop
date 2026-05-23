@@ -44,11 +44,13 @@ export default function AdminLoginScreen({ navigation }) {
     <SafeAreaView style={s.root} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 24}
       >
         <ScrollView
           contentContainerStyle={s.scroll}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <View style={s.logoArea}>
             <Text style={s.logoSymbol}>#</Text>
@@ -111,7 +113,12 @@ export default function AdminLoginScreen({ navigation }) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
-  scroll: { flexGrow: 1, justifyContent: "center", padding: S.xl },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: S.xl,
+    paddingBottom: S.xxl + 72,
+  },
   logoArea: { alignItems: "center", marginBottom: S.xl },
   logoSymbol: { fontSize: 36, marginBottom: S.sm, color: C.gold },
   brand: { fontSize: 24, fontWeight: "900", color: C.cream, letterSpacing: 2 },

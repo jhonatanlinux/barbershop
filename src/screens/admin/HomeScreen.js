@@ -67,7 +67,6 @@ const TABS = [
 export default function AdminHomeScreen({ navigation }) {
   const { logout, user } = useAuth();
   const config = useConfig();
-  const isSuperadmin = user?.role === "superadmin";
   const [tab, setTab] = useState(0);
   const [pendentes, setPendentes] = useState([]);
   const [historico, setHistorico] = useState([]);
@@ -83,10 +82,8 @@ export default function AdminHomeScreen({ navigation }) {
         getResgatesHistorico(),
         getClientes(),
         getMensalistas(),
+        getAdmins(),
       ];
-      if (isSuperadmin) {
-        requests.push(getAdmins());
-      }
       const [pend, hist, cli, mens, adm = []] = await Promise.all(requests);
       setPendentes(pend);
       setHistorico(hist);
@@ -99,7 +96,7 @@ export default function AdminHomeScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [isSuperadmin]);
+  }, []);
   useEffect(() => {
     load();
   }, [load]);
@@ -209,7 +206,7 @@ export default function AdminHomeScreen({ navigation }) {
     "Mensalistas",
     "+ Novo",
     "Config",
-    ...(isSuperadmin ? ["Acessos"] : []),
+    "Acessos",
   ];
   const hoje = new Date().toISOString().split("T")[0];
   const agendaHoje = historico.filter(
@@ -323,7 +320,7 @@ export default function AdminHomeScreen({ navigation }) {
         )}
         {tab === 4 && <CadastrarTab onSuccess={load} />}
         {tab === 5 && <ConfigTab config={config} />}
-        {tab === 6 && isSuperadmin && (
+        {tab === 6 && (
           <AdminsTab admins={admins} currentCpf={user?.cpf} onSuccess={load} />
         )}
       </ScrollView>
@@ -549,6 +546,13 @@ function AgendaTab({ hoje, proximos }) {
   );
 }
 // -- ClientesTab -------------------------------------------
+const normalizeSearch = (value = "") =>
+  String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
 function ClientesTab({
   clientes,
   onLancar,
@@ -557,11 +561,20 @@ function ClientesTab({
   onRemover,
 }) {
   const [busca, setBusca] = useState("");
-  const lista = busca
+  const termo = normalizeSearch(busca);
+  const numeros = busca.replace(/\D/g, "");
+  const lista = termo || numeros
     ? clientes.filter(
-        (c) =>
-          c.nome?.toLowerCase().includes(busca.toLowerCase()) ||
-          c.cpf?.includes(busca.replace(/\D/g, "")),
+        (c) => {
+          const nome = normalizeSearch(c.nome);
+          const cpf = String(c.cpf || "").replace(/\D/g, "");
+          const telefone = String(c.telefone || "").replace(/\D/g, "");
+          return (
+            nome.includes(termo) ||
+            (numeros.length > 0 && cpf.includes(numeros)) ||
+            (numeros.length > 0 && telefone.includes(numeros))
+          );
+        },
       )
     : clientes;
   return (
@@ -573,12 +586,21 @@ function ClientesTab({
         value={busca}
         onChangeText={setBusca}
       />
-      <Card style={{ padding: 0, overflow: "hidden" }}>
-        {lista.map((c, i) => (
-          <View
-            key={c.cpf}
-            style={[clienteRow.item, i < lista.length - 1 && clienteRow.sep]}
-          >
+      {busca.trim() && (
+        <Text style={clienteRow.resultInfo}>
+          {lista.length} resultado(s) encontrado(s)
+        </Text>
+      )}
+      {busca.trim() && lista.length === 0 && (
+        <Empty title="Nenhum cliente encontrado" />
+      )}
+      {lista.length > 0 && (
+        <Card style={{ padding: 0, overflow: "hidden" }}>
+          {lista.map((c, i) => (
+            <View
+              key={c.cpf}
+              style={[clienteRow.item, i < lista.length - 1 && clienteRow.sep]}
+            >
             <View style={clienteRow.top}>
               <Avatar nome={c.nome} tipo={c.tipo} size={38} />
               <View style={clienteRow.info}>
@@ -625,8 +647,9 @@ function ClientesTab({
             />
             </View>
           </View>
-        ))}
-      </Card>
+          ))}
+        </Card>
+      )}
     </View>
   );
 }
@@ -832,6 +855,8 @@ function CadastrarTab({ onSuccess }) {
   const [nome, setNome] = useState("");
   const [tel, setTel] = useState("");
   const [tipo, setTipo] = useState("regular");
+  const [tornarAdmin, setTornarAdmin] = useState(false);
+  const [senhaAdmin, setSenhaAdmin] = useState("");
   const [loading, setLoading] = useState(false);
   const cadastrar = async () => {
     const raw = cpf.replace(/\D/g, "");
@@ -843,6 +868,10 @@ function CadastrarTab({ onSuccess }) {
       CustomAlert.alert("Erro", "Telefone obrigatório");
       return;
     }
+    if (tornarAdmin && !senhaAdmin.trim()) {
+      CustomAlert.alert("Erro", "Informe a senha do acesso admin");
+      return;
+    }
     setLoading(true);
     try {
       await criarCliente({
@@ -850,15 +879,21 @@ function CadastrarTab({ onSuccess }) {
         nome: nome || "Sem nome",
         telefone: tel,
         tipo,
+        tornar_admin: tornarAdmin,
+        admin_senha: tornarAdmin ? senhaAdmin.trim() : null,
       });
       CustomAlert.alert(
         "Cadastrado!",
-        `${nome || "Cliente"} adicionado com sucesso.`,
+        tornarAdmin
+          ? `${nome || "Cliente"} adicionado com acesso admin.`
+          : `${nome || "Cliente"} adicionado com sucesso.`,
       );
       setCpf("");
       setNome("");
       setTel("");
       setTipo("regular");
+      setTornarAdmin(false);
+      setSenhaAdmin("");
       onSuccess();
     } catch (e) {
       CustomAlert.alert("Erro", e.message);
@@ -930,6 +965,34 @@ function CadastrarTab({ onSuccess }) {
           </TouchableOpacity>
         ))}
       </View>
+      <TouchableOpacity
+        style={adminCheck.row}
+        onPress={() => setTornarAdmin((value) => !value)}
+        activeOpacity={0.8}
+      >
+        <View style={[adminCheck.box, tornarAdmin && adminCheck.boxOn]}>
+          {tornarAdmin && <Text style={adminCheck.check}>✓</Text>}
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={adminCheck.title}>Liberar acesso admin</Text>
+          <Text style={adminCheck.sub}>
+            Este CPF tambem podera entrar no painel administrativo.
+          </Text>
+        </View>
+      </TouchableOpacity>
+      {tornarAdmin && (
+        <>
+          <Text style={lbl_s.lbl}>Senha do admin *</Text>
+          <TextInput
+            style={[lbl_s.inp, { marginBottom: S.lg }]}
+            value={senhaAdmin}
+            onChangeText={setSenhaAdmin}
+            placeholder="Senha de acesso ao painel"
+            placeholderTextColor={C.muted}
+            secureTextEntry
+          />
+        </>
+      )}
       <Button
         title="Cadastrar"
         variant="gold"
@@ -943,7 +1006,6 @@ function CadastrarTab({ onSuccess }) {
 function AdminsTab({ admins, currentCpf, onSuccess }) {
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
-  const [role, setRole] = useState("admin");
   const [loading, setLoading] = useState(false);
   const lista = admins || [];
 
@@ -959,10 +1021,9 @@ function AdminsTab({ admins, currentCpf, onSuccess }) {
     }
     setLoading(true);
     try {
-      await salvarAdmin({ cpf: cleanCpf, senha: senha.trim(), role });
+      await salvarAdmin({ cpf: cleanCpf, senha: senha.trim(), role: "admin" });
       setCpf("");
       setSenha("");
-      setRole("admin");
       CustomAlert.alert("Acesso salvo", "O CPF ja pode entrar no painel admin.");
       onSuccess();
     } catch (e) {
@@ -1000,7 +1061,7 @@ function AdminsTab({ admins, currentCpf, onSuccess }) {
         <Text style={[T.h3, { marginBottom: S.xs }]}>Acessos admin</Text>
         <Text style={{ color: C.cream2, fontSize: 12, lineHeight: 18 }}>
           Cadastre primeiro o barbeiro como cliente. Depois informe o CPF aqui
-          e defina se ele sera admin ou superadmin.
+          para liberar o acesso ao painel administrativo.
         </Text>
       </Card>
 
@@ -1024,29 +1085,6 @@ function AdminsTab({ admins, currentCpf, onSuccess }) {
           placeholderTextColor={C.muted}
           secureTextEntry
         />
-        <Text style={lbl_s.lbl}>Permissao</Text>
-        <View style={{ flexDirection: "row", gap: S.sm, marginBottom: S.lg }}>
-          {[
-            { value: "admin", label: "Admin" },
-            { value: "superadmin", label: "Superadmin" },
-          ].map((item) => (
-            <TouchableOpacity
-              key={item.value}
-              style={[lbl_s.pill, role === item.value && lbl_s.pillActive]}
-              onPress={() => setRole(item.value)}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: "700",
-                  color: role === item.value ? C.gold : C.muted,
-                }}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
         <Button
           title="Salvar acesso"
           variant="gold"
@@ -1062,17 +1100,14 @@ function AdminsTab({ admins, currentCpf, onSuccess }) {
         return (
           <Card key={admin.cpf}>
             <View style={adminRow.top}>
-              <Avatar nome={admin.nome || admin.cpf} tipo={admin.role} size={38} />
+              <Avatar nome={admin.nome || admin.cpf} tipo="admin" size={38} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={adminRow.nome} numberOfLines={1}>
                   {admin.nome || "Cliente sem nome"}
                 </Text>
                 <Text style={adminRow.cpf}>{fmtCPF(admin.cpf)}</Text>
               </View>
-              <Badge
-                label={admin.role === "superadmin" ? "Superadmin" : "Admin"}
-                variant={admin.role === "superadmin" ? "purple" : "gold"}
-              />
+              <Badge label="Admin" variant="gold" />
             </View>
             <View style={adminRow.actions}>
               <Badge
@@ -1283,6 +1318,12 @@ const clienteRow = StyleSheet.create({
   removeBtn: {
     minWidth: 92,
   },
+  resultInfo: {
+    color: C.muted,
+    fontSize: 11,
+    marginBottom: S.sm,
+    marginLeft: 2,
+  },
 });
 const cliCheck = StyleSheet.create({
   base: {
@@ -1296,6 +1337,47 @@ const cliCheck = StyleSheet.create({
   on: { borderColor: C.purpleText, backgroundColor: C.purpleBg },
   text: { color: C.muted, fontSize: 11, fontWeight: "700" },
   textOn: { color: C.purpleText },
+});
+const adminCheck = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: S.sm,
+    borderWidth: 1,
+    borderColor: C.border2,
+    backgroundColor: C.surface2,
+    borderRadius: R.md,
+    padding: S.md,
+    marginBottom: S.md,
+  },
+  box: {
+    width: 24,
+    height: 24,
+    borderRadius: R.sm,
+    borderWidth: 1,
+    borderColor: C.border2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  boxOn: {
+    backgroundColor: C.gold,
+    borderColor: C.gold,
+  },
+  check: {
+    color: "#1a0800",
+    fontWeight: "900",
+    fontSize: 15,
+  },
+  title: {
+    color: C.cream,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  sub: {
+    color: C.muted,
+    fontSize: 11,
+    marginTop: 2,
+  },
 });
 const adminRow = StyleSheet.create({
   top: {

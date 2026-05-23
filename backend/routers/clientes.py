@@ -2,6 +2,7 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from passlib.hash import bcrypt
 from pydantic import BaseModel
 
 from auth_utils import require_admin, require_auth
@@ -16,6 +17,8 @@ class ClienteCreate(BaseModel):
     nome: str = "Sem nome"
     telefone: str
     tipo: str = "regular"
+    tornar_admin: bool = False
+    admin_senha: Optional[str] = None
 
 
 class ClienteUpdate(BaseModel):
@@ -43,6 +46,8 @@ async def criar(body: ClienteCreate, _: dict = Depends(require_admin)):
     cpf = body.cpf.replace(".", "").replace("-", "").strip()
     if len(cpf) != 11:
         raise HTTPException(400, "CPF invalido")
+    if body.tornar_admin and not body.admin_senha:
+        raise HTTPException(400, "Informe a senha do acesso admin")
     if using_database():
         try:
             with get_conn() as conn:
@@ -54,6 +59,19 @@ async def criar(body: ClienteCreate, _: dict = Depends(require_admin)):
                     """,
                     (cpf, body.nome, body.telefone, body.tipo),
                 ).fetchone()
+                if body.tornar_admin:
+                    senha_hash = bcrypt.hash(body.admin_senha)
+                    conn.execute(
+                        """
+                        insert into admin_permissoes (cpf, role, senha_hash, ativo)
+                        values (%s, 'admin', %s, true)
+                        on conflict (cpf) do update
+                        set role = 'admin',
+                            senha_hash = excluded.senha_hash,
+                            ativo = true
+                        """,
+                        (cpf, senha_hash),
+                    )
                 conn.commit()
         except Exception as exc:
             if "duplicate key" in str(exc).lower():

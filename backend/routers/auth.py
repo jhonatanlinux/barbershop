@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from passlib.hash import bcrypt
 from pydantic import BaseModel
 
-from auth_utils import criar_token, require_auth, require_superadmin
+from auth_utils import criar_token, require_admin, require_auth
 from db import get_conn, normalize_cliente, using_database
 from mock_data import ADMINS, get_cliente
 
@@ -82,8 +82,8 @@ async def login_admin(body: LoginAdminBody):
         if not admin or not senha_admin_valida(body.senha, admin["senha_hash"]):
             raise HTTPException(401, "Credenciais invalidas")
         nome = admin["nome"] or "Administrador"
-        token = criar_token({"tipo": "admin", "cpf": admin["cpf"], "role": admin["role"], "nome": nome})
-        return {"token": token, "tipo": "admin", "cpf": admin["cpf"], "role": admin["role"], "nome": nome}
+        token = criar_token({"tipo": "admin", "cpf": admin["cpf"], "role": "admin", "nome": nome})
+        return {"token": token, "tipo": "admin", "cpf": admin["cpf"], "role": "admin", "nome": nome}
 
     admin = next((item for item in ADMINS if item["email"] == login_id), None)
     if not admin or body.senha != admin["senha"]:
@@ -98,14 +98,14 @@ async def me(payload: dict = Depends(require_auth)):
 
 
 @router.get("/admins")
-async def listar_admins(_: dict = Depends(require_superadmin)):
+async def listar_admins(_: dict = Depends(require_admin)):
     if not using_database():
-        return [{"cpf": item["email"], "nome": item["nome"], "role": "superadmin", "ativo": True} for item in ADMINS]
+        return [{"cpf": item["email"], "nome": item["nome"], "role": "admin", "ativo": True} for item in ADMINS]
 
     with get_conn() as conn:
         rows = conn.execute(
             """
-            select ap.cpf, c.nome, ap.role, ap.ativo, ap.created_at, ap.updated_at
+            select ap.cpf, c.nome, 'admin' as role, ap.ativo, ap.created_at, ap.updated_at
             from admin_permissoes ap
             join clientes c on c.cpf = ap.cpf
             order by c.nome
@@ -115,33 +115,20 @@ async def listar_admins(_: dict = Depends(require_superadmin)):
 
 
 @router.post("/admins", status_code=201)
-async def salvar_admin(body: AdminPermissaoBody, actor: dict = Depends(require_superadmin)):
-    if body.role not in ("admin", "superadmin"):
-        raise HTTPException(400, "Role invalida")
+async def salvar_admin(body: AdminPermissaoBody, actor: dict = Depends(require_admin)):
     if not using_database():
         raise HTTPException(400, "Cadastro de admins exige banco de dados")
 
     cpf = body.cpf.replace(".", "").replace("-", "").strip()
     if len(cpf) != 11:
         raise HTTPException(400, "CPF invalido")
-    if cpf == actor.get("cpf") and body.role != "superadmin":
-        raise HTTPException(400, "Voce nao pode remover seu proprio superadmin")
+    role = "admin"
 
     senha_hash = bcrypt.hash(body.senha)
     with get_conn() as conn:
         cliente = conn.execute("select cpf from clientes where cpf = %s", (cpf,)).fetchone()
         if not cliente:
             raise HTTPException(404, "Cliente não encontrado")
-        atual = conn.execute(
-            "select role, ativo from admin_permissoes where cpf = %s",
-            (cpf,),
-        ).fetchone()
-        if atual and atual["role"] == "superadmin" and body.role != "superadmin":
-            total = conn.execute(
-                "select count(*) as total from admin_permissoes where role = 'superadmin' and ativo = true"
-            ).fetchone()
-            if int(total["total"]) <= 1:
-                raise HTTPException(400, "Mantenha ao menos um superadmin ativo")
         row = conn.execute(
             """
             insert into admin_permissoes (cpf, role, senha_hash, ativo)
@@ -152,14 +139,14 @@ async def salvar_admin(body: AdminPermissaoBody, actor: dict = Depends(require_s
                 ativo = true
             returning cpf, role, ativo
             """,
-            (cpf, body.role, senha_hash),
+            (cpf, role, senha_hash),
         ).fetchone()
         conn.commit()
     return dict(row)
 
 
 @router.delete("/admins/{cpf}")
-async def desativar_admin(cpf: str, actor: dict = Depends(require_superadmin)):
+async def desativar_admin(cpf: str, actor: dict = Depends(require_admin)):
     if not using_database():
         raise HTTPException(400, "Cadastro de admins exige banco de dados")
 
@@ -173,12 +160,12 @@ async def desativar_admin(cpf: str, actor: dict = Depends(require_superadmin)):
         ).fetchone()
         if not atual:
             raise HTTPException(404, "Admin nao encontrado")
-        if atual["role"] == "superadmin" and atual["ativo"]:
+        if atual["ativo"]:
             total = conn.execute(
-                "select count(*) as total from admin_permissoes where role = 'superadmin' and ativo = true"
+                "select count(*) as total from admin_permissoes where ativo = true"
             ).fetchone()
             if int(total["total"]) <= 1:
-                raise HTTPException(400, "Mantenha ao menos um superadmin ativo")
+                raise HTTPException(400, "Mantenha ao menos um admin ativo")
         row = conn.execute(
             "update admin_permissoes set ativo = false where cpf = %s returning cpf, role, ativo",
             (clean_cpf,),
