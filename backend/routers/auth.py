@@ -115,7 +115,7 @@ async def listar_admins(_: dict = Depends(require_superadmin)):
 
 
 @router.post("/admins", status_code=201)
-async def salvar_admin(body: AdminPermissaoBody, _: dict = Depends(require_superadmin)):
+async def salvar_admin(body: AdminPermissaoBody, actor: dict = Depends(require_superadmin)):
     if body.role not in ("admin", "superadmin"):
         raise HTTPException(400, "Role invalida")
     if not using_database():
@@ -124,12 +124,24 @@ async def salvar_admin(body: AdminPermissaoBody, _: dict = Depends(require_super
     cpf = body.cpf.replace(".", "").replace("-", "").strip()
     if len(cpf) != 11:
         raise HTTPException(400, "CPF invalido")
+    if cpf == actor.get("cpf") and body.role != "superadmin":
+        raise HTTPException(400, "Voce nao pode remover seu proprio superadmin")
 
     senha_hash = bcrypt.hash(body.senha)
     with get_conn() as conn:
         cliente = conn.execute("select cpf from clientes where cpf = %s", (cpf,)).fetchone()
         if not cliente:
             raise HTTPException(404, "Cliente não encontrado")
+        atual = conn.execute(
+            "select role, ativo from admin_permissoes where cpf = %s",
+            (cpf,),
+        ).fetchone()
+        if atual and atual["role"] == "superadmin" and body.role != "superadmin":
+            total = conn.execute(
+                "select count(*) as total from admin_permissoes where role = 'superadmin' and ativo = true"
+            ).fetchone()
+            if int(total["total"]) <= 1:
+                raise HTTPException(400, "Mantenha ao menos um superadmin ativo")
         row = conn.execute(
             """
             insert into admin_permissoes (cpf, role, senha_hash, ativo)
@@ -147,12 +159,26 @@ async def salvar_admin(body: AdminPermissaoBody, _: dict = Depends(require_super
 
 
 @router.delete("/admins/{cpf}")
-async def desativar_admin(cpf: str, _: dict = Depends(require_superadmin)):
+async def desativar_admin(cpf: str, actor: dict = Depends(require_superadmin)):
     if not using_database():
         raise HTTPException(400, "Cadastro de admins exige banco de dados")
 
     clean_cpf = cpf.replace(".", "").replace("-", "").strip()
+    if clean_cpf == actor.get("cpf"):
+        raise HTTPException(400, "Voce nao pode desativar seu proprio acesso")
     with get_conn() as conn:
+        atual = conn.execute(
+            "select role, ativo from admin_permissoes where cpf = %s",
+            (clean_cpf,),
+        ).fetchone()
+        if not atual:
+            raise HTTPException(404, "Admin nao encontrado")
+        if atual["role"] == "superadmin" and atual["ativo"]:
+            total = conn.execute(
+                "select count(*) as total from admin_permissoes where role = 'superadmin' and ativo = true"
+            ).fetchone()
+            if int(total["total"]) <= 1:
+                raise HTTPException(400, "Mantenha ao menos um superadmin ativo")
         row = conn.execute(
             "update admin_permissoes set ativo = false where cpf = %s returning cpf, role, ativo",
             (clean_cpf,),
