@@ -2,7 +2,7 @@
   "expo": {
     "name": "Corte Fino",
     "slug": "barbershop",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "splash": {
@@ -19,7 +19,8 @@
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#110704"
       },
-      "package": "com.cortefino.app"
+      "package": "com.cortefino.app",
+      "versionCode": 2
     },
     "plugins": [
       "expo-secure-store",

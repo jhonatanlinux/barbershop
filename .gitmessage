@@ -1,0 +1,24 @@
+feat: resumo curto do que mudou
+
+Versao: APP 1.1
+
+Problema:
+
+- Descreva o problema que motivou a mudanca.
+- Explique o que estava falhando, faltando ou confuso.
+
+Correcao:
+
+- Liste as alteracoes principais feitas no codigo.
+- Cite telas, endpoints, tabelas, workflows ou regras afetadas.
+
+Impacto:
+
+- Explique quem ou o que sera afetado pela mudanca.
+- Informe se gera novo APK, altera banco, backend, login ou fluxo do cliente.
+
+Cuidados:
+
+- Informe passos manuais depois do deploy, se existirem.
+- Informe testes importantes antes de entregar ao cliente.
+- Nao coloque senhas, tokens, chaves, connection strings ou CPFs reais.

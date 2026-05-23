@@ -84,10 +84,10 @@ export function AuthProvider({ children }) {
     setUser({ tipo: "cliente", cpf, nome: data.nome, pontos: data.pontos });
     return data;
   }, []);
-  const loginAdmin = useCallback(async (email, senha) => {
-    const data = await apiLoginAdmin(email, senha);
+  const loginAdmin = useCallback(async (cpf, senha) => {
+    const data = await apiLoginAdmin(cpf, senha);
     await SecureStore.setItemAsync(TOKEN_KEY, data.token);
-    setUser({ tipo: "admin", nome: data.nome });
+    setUser({ tipo: "admin", cpf: data.cpf, nome: data.nome, role: data.role });
     return data;
   }, []);
   const logout = useCallback(async () => {

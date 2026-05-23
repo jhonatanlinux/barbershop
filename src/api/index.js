@@ -28,8 +28,7 @@ const get = (url) => api.get(url);
 const post = (url, data) => api.post(url, data);
 const patch = (url, data) => api.patch(url, data);
 export const loginCliente = (cpf) => post("/auth/cliente", { cpf });
-export const loginAdmin = (email, senha) =>
-  post("/auth/admin", { email, senha });
+export const loginAdmin = (cpf, senha) => post("/auth/admin", { cpf, senha });
 export const getMe = () => get("/auth/me");
 export const getClientes = () => get("/clientes");
 export const getCliente = (cpf) => get(`/clientes/${cpf}`);

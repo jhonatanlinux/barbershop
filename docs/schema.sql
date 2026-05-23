@@ -10,6 +10,7 @@ drop table if exists pontos_historico cascade;
 drop table if exists resgates cascade;
 drop table if exists cortes cascade;
 drop table if exists catalogo_itens cascade;
+drop table if exists admin_permissoes cascade;
 drop table if exists config_sistema cascade;
 drop table if exists clientes cascade;
 drop table if exists admins cascade;
@@ -37,6 +38,15 @@ create table clientes (
   barbas_semanas jsonb not null default '[]'::jsonb,
   data_nascimento date,
   anotacoes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table admin_permissoes (
+  cpf text primary key references clientes(cpf) on delete cascade,
+  role text not null default 'admin' check (role in ('admin', 'superadmin')),
+  senha_hash text not null,
+  ativo boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -96,6 +106,7 @@ create table config_sistema (
 );
 
 create index idx_clientes_tipo on clientes(tipo);
+create index idx_admin_permissoes_role on admin_permissoes(role);
 create index idx_clientes_vencimento on clientes(plano_vencimento) where plano_vencimento is not null;
 create index idx_catalogo_ativo_ordem on catalogo_itens(ativo, ordem);
 create index idx_cortes_cpf_created on cortes(cpf, created_at desc);
@@ -120,6 +131,10 @@ for each row execute function set_updated_at();
 
 create trigger trg_resgates_updated
 before update on resgates
+for each row execute function set_updated_at();
+
+create trigger trg_admin_permissoes_updated
+before update on admin_permissoes
 for each row execute function set_updated_at();
 
 create or replace view v_resgates_completo as
@@ -332,6 +347,7 @@ end;
 $$;
 
 alter table admins enable row level security;
+alter table admin_permissoes enable row level security;
 alter table clientes enable row level security;
 alter table catalogo_itens enable row level security;
 alter table cortes enable row level security;
@@ -342,6 +358,7 @@ alter table config_sistema enable row level security;
 -- O app mobile nao deve acessar o Supabase direto neste projeto.
 -- O backend usa DATABASE_URL/service credentials e aplica autorizacao propria.
 revoke all on admins from anon, authenticated;
+revoke all on admin_permissoes from anon, authenticated;
 revoke all on clientes from anon, authenticated;
 revoke all on catalogo_itens from anon, authenticated;
 revoke all on cortes from anon, authenticated;

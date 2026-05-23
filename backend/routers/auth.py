@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from passlib.hash import bcrypt
 from pydantic import BaseModel
 
-from auth_utils import criar_token, require_auth
+from auth_utils import criar_token, require_auth, require_superadmin
 from db import get_conn, normalize_cliente, using_database
 from mock_data import ADMINS, get_cliente
 
@@ -14,8 +14,15 @@ class LoginClienteBody(BaseModel):
 
 
 class LoginAdminBody(BaseModel):
-    email: str
+    cpf: str | None = None
+    email: str | None = None
     senha: str
+
+
+class AdminPermissaoBody(BaseModel):
+    cpf: str
+    senha: str
+    role: str = "admin"
 
 
 @router.post("/cliente")
@@ -39,18 +46,32 @@ async def login_cliente(body: LoginClienteBody):
 
 @router.post("/admin")
 async def login_admin(body: LoginAdminBody):
+    login_id = (body.cpf or body.email or "").replace(".", "").replace("-", "").strip()
+    if not login_id:
+        raise HTTPException(400, "Informe o CPF")
+
     if using_database():
         with get_conn() as conn:
             admin = conn.execute(
-                "select id, email, senha_hash, nome from admins where email = %s and ativo = true",
-                (body.email,),
+                """
+                select
+                  ap.cpf,
+                  ap.role,
+                  ap.senha_hash,
+                  c.nome
+                from admin_permissoes ap
+                join clientes c on c.cpf = ap.cpf
+                where ap.cpf = %s
+                  and ap.ativo = true
+                """,
+                (login_id,),
             ).fetchone()
         if not admin or not bcrypt.verify(body.senha, admin["senha_hash"]):
             raise HTTPException(401, "Credenciais invalidas")
-        token = criar_token({"tipo": "admin", "id": admin["id"], "nome": admin["nome"]})
-        return {"token": token, "tipo": "admin", "nome": admin["nome"]}
+        token = criar_token({"tipo": "admin", "cpf": admin["cpf"], "role": admin["role"], "nome": admin["nome"]})
+        return {"token": token, "tipo": "admin", "cpf": admin["cpf"], "role": admin["role"], "nome": admin["nome"]}
 
-    admin = next((item for item in ADMINS if item["email"] == body.email), None)
+    admin = next((item for item in ADMINS if item["email"] == login_id), None)
     if not admin or body.senha != admin["senha"]:
         raise HTTPException(401, "Credenciais invalidas")
     token = criar_token({"tipo": "admin", "id": admin["id"], "nome": admin["nome"]})
@@ -60,3 +81,69 @@ async def login_admin(body: LoginAdminBody):
 @router.get("/me")
 async def me(payload: dict = Depends(require_auth)):
     return payload
+
+
+@router.get("/admins")
+async def listar_admins(_: dict = Depends(require_superadmin)):
+    if not using_database():
+        return [{"cpf": item["email"], "nome": item["nome"], "role": "superadmin", "ativo": True} for item in ADMINS]
+
+    with get_conn() as conn:
+        rows = conn.execute(
+            """
+            select ap.cpf, c.nome, ap.role, ap.ativo, ap.created_at, ap.updated_at
+            from admin_permissoes ap
+            join clientes c on c.cpf = ap.cpf
+            order by c.nome
+            """
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+@router.post("/admins", status_code=201)
+async def salvar_admin(body: AdminPermissaoBody, _: dict = Depends(require_superadmin)):
+    if body.role not in ("admin", "superadmin"):
+        raise HTTPException(400, "Role invalida")
+    if not using_database():
+        raise HTTPException(400, "Cadastro de admins exige banco de dados")
+
+    cpf = body.cpf.replace(".", "").replace("-", "").strip()
+    if len(cpf) != 11:
+        raise HTTPException(400, "CPF invalido")
+
+    senha_hash = bcrypt.hash(body.senha)
+    with get_conn() as conn:
+        cliente = conn.execute("select cpf from clientes where cpf = %s", (cpf,)).fetchone()
+        if not cliente:
+            raise HTTPException(404, "Cliente nao encontrado")
+        row = conn.execute(
+            """
+            insert into admin_permissoes (cpf, role, senha_hash, ativo)
+            values (%s, %s, %s, true)
+            on conflict (cpf) do update
+            set role = excluded.role,
+                senha_hash = excluded.senha_hash,
+                ativo = true
+            returning cpf, role, ativo
+            """,
+            (cpf, body.role, senha_hash),
+        ).fetchone()
+        conn.commit()
+    return dict(row)
+
+
+@router.delete("/admins/{cpf}")
+async def desativar_admin(cpf: str, _: dict = Depends(require_superadmin)):
+    if not using_database():
+        raise HTTPException(400, "Cadastro de admins exige banco de dados")
+
+    clean_cpf = cpf.replace(".", "").replace("-", "").strip()
+    with get_conn() as conn:
+        row = conn.execute(
+            "update admin_permissoes set ativo = false where cpf = %s returning cpf, role, ativo",
+            (clean_cpf,),
+        ).fetchone()
+        conn.commit()
+    if not row:
+        raise HTTPException(404, "Admin nao encontrado")
+    return dict(row)

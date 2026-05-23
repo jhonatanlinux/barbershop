@@ -35,6 +35,12 @@ async def require_admin(payload: dict = Depends(require_auth)) -> dict:
     return payload
 
 
+async def require_superadmin(payload: dict = Depends(require_admin)) -> dict:
+    if payload.get("role") != "superadmin":
+        raise HTTPException(status_code=403, detail="Acesso restrito ao superadmin")
+    return payload
+
+
 async def require_cliente(payload: dict = Depends(require_auth)) -> dict:
     if payload.get("tipo") != "cliente":
         raise HTTPException(status_code=403, detail="Acesso restrito a clientes")

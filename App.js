@@ -1,5 +1,6 @@
 import "react-native-gesture-handler";
 import React from "react";
+import { View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -7,7 +8,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { AlertProvider } from "./src/components/CustomAlert";
-import { Loading } from "./src/components";
+import { AppFooter, Loading } from "./src/components";
 import { C } from "./src/theme";
 
 import ClienteLoginScreen from "./src/screens/auth/ClienteLoginScreen";
@@ -76,7 +77,10 @@ export default function App() {
             }}
           >
             <StatusBar style="light" backgroundColor={C.bg} />
-            <RootNavigator />
+            <View style={{ flex: 1 }}>
+              <RootNavigator />
+              <AppFooter />
+            </View>
           </NavigationContainer>
         </AlertProvider>
       </AuthProvider>

@@ -1,6 +1,7 @@
 import React from "react";
 import {
   ActivityIndicator,
+  Linking,
   StyleSheet,
   Text,
   TextInput,
@@ -8,6 +9,11 @@ import {
   View,
 } from "react-native";
 import { C, R, S, T } from "../theme";
+import {
+  APP_VERSION_LABEL,
+  DEVELOPER_HANDLE,
+  DEVELOPER_URL,
+} from "../config/appVersion";
 const BTN_VARIANTS = {
   gold: { bg: C.gold, border: "transparent", text: "#1a0800", weight: "700" },
   green: { bg: C.green, border: "transparent", text: "#fff", weight: "600" },
@@ -249,6 +255,20 @@ export function TabBar({ tabs, active, onChange }) {
     </View>
   );
 }
+export function AppFooter() {
+  const openDeveloper = () => {
+    Linking.openURL(DEVELOPER_URL).catch(() => {});
+  };
+
+  return (
+    <View style={footer.root}>
+      <Text style={footer.text}>{APP_VERSION_LABEL} - Desenvolvido por </Text>
+      <TouchableOpacity onPress={openDeveloper} activeOpacity={0.75}>
+        <Text style={[footer.text, footer.link]}>{DEVELOPER_HANDLE}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
 const btn = StyleSheet.create({
   base: {
     paddingVertical: 11,
@@ -369,4 +389,19 @@ const tab = StyleSheet.create({
   active: { borderBottomColor: C.gold },
   txt: { fontSize: 11, fontWeight: "500", color: C.muted },
   activeTxt: { color: C.gold, fontWeight: "700" },
+});
+const footer = StyleSheet.create({
+  root: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: C.bg,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    paddingHorizontal: S.md,
+    paddingVertical: S.sm,
+  },
+  text: { color: C.muted, fontSize: 11, textAlign: "center" },
+  link: { color: C.gold, fontWeight: "700" },
 });
