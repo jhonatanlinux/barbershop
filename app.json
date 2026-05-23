@@ -23,6 +23,12 @@
       "expo-secure-store",
       "expo-asset",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5cf902bd-04eb-49aa-88a1-f4bae014ef43"
+      }
+    },
+    "owner": "jhonatan_a1ves"
   }
 }
