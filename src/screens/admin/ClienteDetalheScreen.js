@@ -1,5 +1,5 @@
-// src/screens/admin/ClienteDetalheScreen.js - import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Alert, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { C, S, R, T } from "../../theme";
 import {
   Card,
@@ -23,6 +23,7 @@ import {
   podeBarba,
   semanaDoPlano,
 } from "../../utils";
+import { CustomAlert } from "../../components/CustomAlert";
 export default function ClienteDetalheScreen({ route }) {
   const { cpf } = route.params;
   const [cliente, setCliente] = useState(null);
@@ -32,7 +33,7 @@ export default function ClienteDetalheScreen({ route }) {
       const c = await getCliente(cpf);
       setCliente(c);
     } catch (e) {
-      Alert.alert("Erro", e.message);
+      CustomAlert.alert("Erro", e.message);
     } finally {
       setLoading(false);
     }
@@ -43,10 +44,10 @@ export default function ClienteDetalheScreen({ route }) {
   const onLancar = async (tipo) => {
     try {
       await lancarCorte(cpf, tipo);
-      Alert.alert("? Lanado!", "Pontos adicionados.");
+      CustomAlert.alert("Lancado!", "Pontos adicionados.");
       load();
     } catch (e) {
-      Alert.alert("Erro", e.message);
+      CustomAlert.alert("Erro", e.message);
     }
   };
   if (loading) return <Loading />;

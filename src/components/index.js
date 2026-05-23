@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { C, R, S, T } from "../theme";
 import {
   APP_VERSION_LABEL,
@@ -261,12 +262,14 @@ export function AppFooter() {
   };
 
   return (
-    <View style={footer.root}>
-      <Text style={footer.text}>{APP_VERSION_LABEL} - Desenvolvido por </Text>
-      <TouchableOpacity onPress={openDeveloper} activeOpacity={0.75}>
-        <Text style={[footer.text, footer.link]}>{DEVELOPER_HANDLE}</Text>
-      </TouchableOpacity>
-    </View>
+    <SafeAreaView edges={["bottom"]} style={footer.safe}>
+      <View style={footer.root}>
+        <Text style={footer.text}>{APP_VERSION_LABEL} - Desenvolvido por </Text>
+        <TouchableOpacity onPress={openDeveloper} activeOpacity={0.75}>
+          <Text style={[footer.text, footer.link]}>{DEVELOPER_HANDLE}</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 const btn = StyleSheet.create({
@@ -391,16 +394,20 @@ const tab = StyleSheet.create({
   activeTxt: { color: C.gold, fontWeight: "700" },
 });
 const footer = StyleSheet.create({
+  safe: {
+    backgroundColor: C.bg,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+  },
   root: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: C.bg,
-    borderTopWidth: 1,
-    borderTopColor: C.border,
     paddingHorizontal: S.md,
-    paddingVertical: S.sm,
+    paddingTop: 6,
+    paddingBottom: 8,
+    minHeight: 32,
   },
   text: { color: C.muted, fontSize: 11, textAlign: "center" },
   link: { color: C.gold, fontWeight: "700" },

@@ -7,11 +7,21 @@ from decimal import Decimal
 import psycopg
 from psycopg.rows import dict_row
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+APP_ENV = os.getenv("APP_ENV", "").lower()
+ALLOW_MOCK_DATA = os.getenv("ALLOW_MOCK_DATA", "").lower() in {"1", "true", "yes"}
+
+
+def is_production() -> bool:
+    return APP_ENV in {"prod", "production"} or bool(os.getenv("RENDER"))
 
 
 def using_database() -> bool:
     return bool(DATABASE_URL)
+
+
+def mock_data_enabled() -> bool:
+    return not is_production() or ALLOW_MOCK_DATA
 
 
 @contextmanager

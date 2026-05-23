@@ -41,7 +41,7 @@ export default function ClienteLoginScreen({ navigation }) {
     }
   };
   return (
-    <SafeAreaView style={s.root} edges={["top", "bottom"]}>
+    <SafeAreaView style={s.root} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}

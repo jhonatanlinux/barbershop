@@ -14,7 +14,7 @@ let showAlert = null;
 const BUTTON_STYLES = {
   destructive: { color: C.redText, bg: C.redBg, border: "rgba(196,64,64,.3)" },
   cancel: { color: C.muted, bg: "transparent", border: C.border },
-  default: { color: C.gold, bg: C.goldDim, border: C.goldBorder },
+  default: { color: "#1a0800", bg: C.gold, border: "transparent" },
 };
 
 export function useAlert() {
@@ -120,9 +120,9 @@ const s = StyleSheet.create({
     width: "100%",
     maxWidth: 340,
     backgroundColor: C.surface,
-    borderRadius: R.xl,
+    borderRadius: R.lg,
     borderWidth: 1,
-    borderColor: C.border2,
+    borderColor: C.goldBorder,
     overflow: "hidden",
   },
   topBar: { height: 3, backgroundColor: C.gold, opacity: 0.8 },

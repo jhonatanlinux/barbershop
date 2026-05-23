@@ -9,6 +9,10 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.8"
+      - key: APP_ENV
+        value: production
+      - key: ALLOW_MOCK_DATA
+        value: "false"
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET

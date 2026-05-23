@@ -5,7 +5,6 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
-  Alert,
   StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,7 +16,6 @@ import {
   CatBadge,
   StatusBadge,
   Button,
-  ProgressBar,
   TabBar,
   Loading,
   Empty,
@@ -35,6 +33,7 @@ import {
   podeBarba,
   semanaDoPlano,
 } from "../../utils";
+import { CustomAlert } from "../../components/CustomAlert";
 const TABS = ["Catlogo", "Solicitaes", "Histrico"];
 const CAT_ORDER = ["corte", "barba", "bebida", "produto"];
 const CAT_LABEL = {
@@ -56,7 +55,7 @@ export default function ClienteHomeScreen() {
       setCliente(c);
       setCatalogo(cat);
     } catch (e) {
-      Alert.alert("Erro", e.message);
+      CustomAlert.alert("Erro", e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -66,17 +65,17 @@ export default function ClienteHomeScreen() {
     load();
   }, [load]);
   const onSolicitar = async (itemId, itemNome) => {
-    Alert.alert("Confirmar", `Solicitar "${itemNome}"?`, [
+    CustomAlert.alert("Confirmar", `Solicitar "${itemNome}"?`, [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Solicitar",
         onPress: async () => {
           try {
             await solicitarResgate(itemId);
-            Alert.alert("Solicitado!", "Aguarde a barbearia autorizar.");
+            CustomAlert.alert("Solicitado!", "Aguarde a barbearia autorizar.");
             load();
           } catch (e) {
-            Alert.alert("Erro", e.message);
+            CustomAlert.alert("Erro", e.message);
           }
         },
       },
@@ -84,7 +83,6 @@ export default function ClienteHomeScreen() {
   };
   if (loading) return <Loading />;
   if (!cliente) return null;
-  const prog = cliente.pontos % 100;
   const ativo = planoAtivo(cliente);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
@@ -142,17 +140,13 @@ ${fmtCPF(cliente.cpf)}`}
                 {cliente.pontos}
               </Text>
               <Text style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
-                Faltam {100 - prog} pts para o prximo corte grtis
+                Use seus pontos para solicitar premios no catalogo.
               </Text>
             </View>
             {cliente.tipo === "mensalista" && (
               <PlanoBadge tipo={cliente.plano_tipo} />
             )}
           </View>
-          <ProgressBar value={prog} max={100} />
-          <Text style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-            {Math.floor(cliente.pontos / 100)} corte(s) grtis conquistado(s)
-          </Text>
         </Card>
         {/* Card plano mensalista */}
         {cliente.tipo === "mensalista" && cliente.plano_inicio && (
