@@ -1,52 +1,40 @@
-# Barbershop — Sistema de Pontos e Resgates
+# Corte Fino
 
-Sistema completo para barbearia com acúmulo de pontos, catálogo de resgates e planos mensalistas.
+Aplicativo mobile Expo/React Native com API FastAPI mock para sistema de pontos, resgates e planos mensalistas de barbearia.
 
-## 📁 Estrutura
+## Estrutura
 
-```
+```text
 barbershop/
-├── index.html          # Protótipo completo (standalone, abre no browser)
-├── backend/            # API FastAPI (Python 3.12)
-├── app/                # App mobile (Expo React Native)
-└── docs/               # Documentação e SQL
+├── App.js
+├── src/        # App mobile
+├── assets/     # Assets usados pelo app
+├── backend/    # API FastAPI mock
+├── docs/       # SQL e setup
+└── package.json
 ```
 
-## 🚀 Testar agora (sem instalação)
+## App
 
-Abra o `index.html` diretamente no Chrome.
+```bash
+npm install
+npm start
+```
 
-**Acesso cliente:** CPF `042.325.951-20`  
-**Acesso admin:** usuário `admin` / senha `-1PL&,8!gk>J9Np`
+Para apontar para outra API:
 
-## ✅ Funcionalidades
+```bash
+EXPO_PUBLIC_API_URL=http://SEU_IP:8000 npm start
+```
 
-- Cadastro de clientes por CPF
-- Acúmulo de pontos por corte (+10 pts regular / +3 pts mensalista)
-- Catálogo de resgates com autorização do admin
-- 3 planos mensalistas: Completo, Sem Barba, Só Barba (careca)
-- Painel admin completo com agenda, relatórios e solicitações
-- Dashboard TV com relógio em tempo real
-- Sistema de Feature Flags — admin ativa/desativa cada módulo
-- Ícones vetoriais SVG em toda a aplicação
-- Tema dark premium (Playfair Display + DM Sans)
+## Backend
 
-## 🗺️ Roadmap
+```bash
+cd backend
+.\venv\Scripts\python.exe -m uvicorn main:app --reload
+```
 
-- [ ] Banco de dados Supabase (PostgreSQL)
-- [ ] Backend FastAPI (Python 3.12)
-- [ ] App mobile (Expo React Native — Android + iOS)
-- [ ] Persistência localStorage
-- [ ] Notificação WhatsApp
-- [ ] QR Code do cliente
-- [ ] PWA / modo offline
+Credenciais mock:
 
-## 🛠️ Stack planejada
-
-| Camada | Tecnologia |
-|---|---|
-| Protótipo | HTML + CSS + JS (standalone) |
-| Backend | FastAPI (Python 3.12) |
-| Banco | PostgreSQL via Supabase |
-| Mobile | Expo SDK 51 (React Native) |
-| Deploy | VPS Linux + Docker |
+- Cliente: CPF `042.325.951-20`
+- Admin: configure a credencial no backend antes de rodar em ambiente real.

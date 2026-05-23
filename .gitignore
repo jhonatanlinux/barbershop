@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+dist/
+build/
+
+backend/venv/
+__pycache__/
+*.py[cod]
+
+.env
+.env.*
+!.env.example
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

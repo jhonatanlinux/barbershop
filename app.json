@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Corte Fino",
+    "slug": "barbershop",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#110704"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.cortefino.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#110704"
+      },
+      "package": "com.cortefino.app"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-asset",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "SEU-PROJECT-ID"
+      }
+    }
+  }
+}

@@ -1,168 +1,57 @@
-# Barbershop — Guia de Setup Completo
+# Setup Supabase e Deploy
 
-## 1. Supabase (Banco de Dados)
+## Supabase
 
-### Criar projeto
-1. Acesse https://supabase.com e crie uma conta
-2. New Project → nomeie como `barbershop`
-3. Defina uma senha forte para o banco
-4. Aguarde o setup (~2 min)
+1. Crie o projeto no Supabase.
+2. Abra **SQL Editor**.
+3. Execute `docs/schema.sql`.
+4. Execute `docs/seed.sql`.
+5. Execute uma copia local de `docs/create_admin.example.sql`, trocando a senha placeholder antes.
 
-### Rodar o schema
-1. Supabase Dashboard → **SQL Editor**
-2. Cole o conteúdo de `docs/schema.sql` e execute
-3. Cole o conteúdo de `docs/seed.sql` e execute
-4. Verifique em **Table Editor** se as tabelas foram criadas
+Nao coloque senha real em arquivos versionados.
 
-### Pegar as credenciais
-Em **Settings → API** você vai encontrar:
-- **Project URL**: `https://XXXX.supabase.co`
-- **anon key**: chave pública (segura para o frontend)
-- **service_role key**: chave privada (use APENAS no backend)
+## Credenciais do Banco
 
----
+No Supabase, use **Project Settings > Database** para copiar a connection string.
 
-## 2. Backend FastAPI
+Se a senha tiver caracteres especiais, use a senha codificada para URL na connection string.
 
-### Requisitos
-- Python 3.12
-- pip
+Exemplo de `.env` do backend:
 
-### Setup local
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate        # Windows
-# ou: source venv/bin/activate  # Linux/Mac
-
-pip install -r requirements.txt
-```
-
-### Variáveis de ambiente
-Crie `backend/.env`:
 ```env
-USE_MOCK=false
-DATABASE_URL=postgresql://postgres:SUASENHA@db.SEUPROJETO.supabase.co:5432/postgres
-JWT_SECRET=gere_uma_chave_forte_aqui
+DATABASE_URL=postgresql://postgres.PROJECT_REF:SUA_SENHA_URL_ENCODED@aws-0-REGIAO.pooler.supabase.com:6543/postgres
+JWT_SECRET=troque_por_uma_chave_grande_e_aleatoria
 JWT_EXPIRES_DAYS=7
-PONTOS_POR_CORTE=10
-PONTOS_POR_SESSAO_MENSALISTA=3
+MOCK_ADMIN_EMAIL=admin
+MOCK_ADMIN_PASSWORD=troque-esta-senha
 ```
 
-### Rodar localmente
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
+## Validacao
 
-### Deploy com Docker (VPS)
-```bash
-# No seu VPS
-git clone https://github.com/jhonatanlinux/barbershop.git
-cd barbershop/backend
+Depois de rodar os SQLs, confira no Table Editor:
 
-# Criar .env com as variáveis de produção
-docker build -t barbershop-api .
-docker run -d -p 8000:8000 --env-file .env barbershop-api
-```
+- `admins`
+- `clientes`
+- `catalogo_itens`
+- `config_sistema`
+- `resgates`
+- `pontos_historico`
+- `cortes`
 
----
+## Proximo Passo
 
-## 3. App Expo (Mobile)
+Adaptar o backend para usar `DATABASE_URL`/Postgres em vez de `mock_data.py`.
 
-### Requisitos
-- Node.js 20+
-- npm ou yarn
-- Expo Go no celular (para testar)
-- Conta no Expo (eas.expo.dev) para builds
+## Deploy rapido do backend no Render
 
-### Setup
-```bash
-cd app
-npm install
-```
-
-### Configurar URL da API
-Em `src/api.js`, substitua o IP:
-```javascript
-export const API_URL = __DEV__
-  ? 'http://SEU_IP_LOCAL:8000'   // seu IP na rede local
-  : 'https://api.seudominio.com'; // produção
-```
-
-Para descobrir seu IP local (Windows):
-```
-ipconfig → IPv4 Address
-```
-
-### Testar com Expo Go
-```bash
-npx expo start
-```
-Escaneie o QR Code com o Expo Go no celular.
-
-### Gerar APK (Android)
-```bash
-# Instalar EAS CLI
-npm install -g eas-cli
-
-# Login na conta Expo
-eas login
-
-# Configurar o projeto
-eas build:configure
-
-# Gerar APK de preview (sem Play Store)
-eas build --platform android --profile preview
-```
-O APK será gerado na nuvem (~10 min). Baixe e instale direto no Android.
-
-### Gerar IPA (iOS)
-```bash
-eas build --platform ios --profile preview
-```
-Requer conta Apple Developer ($99/ano).
-
----
-
-## 4. Configurar domínio (VPS + Nginx)
-
-```nginx
-server {
-    listen 80;
-    server_name api.suabarbearia.com;
-
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
-```bash
-# SSL com Let's Encrypt
-certbot --nginx -d api.suabarbearia.com
-```
-
----
-
-## 5. Checklist de Produção
-
-- [ ] Schema SQL rodado no Supabase
-- [ ] Seed SQL rodado (admin + catálogo)
-- [ ] Backend rodando no VPS
-- [ ] SSL configurado no domínio
-- [ ] API_URL atualizada no app para o domínio de produção
-- [ ] APK gerado e testado
-- [ ] USE_MOCK=false no backend
-- [ ] JWT_SECRET trocado por uma chave forte
-
----
-
-## Credenciais padrão (trocar em produção!)
-
-| | |
-|---|---|
-| Admin usuário | `admin` |
-| Admin senha | `-1PL&,8!gk>J9Np` |
-| CPF de teste | `042.325.951-20` (Carlos Eduardo) |
+1. Acesse https://render.com.
+2. Crie um **Web Service** conectado ao repositorio GitHub.
+3. Configure:
+   - Root Directory: `backend`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+4. Em **Environment Variables**, adicione:
+   - `DATABASE_URL`
+   - `JWT_SECRET`
+   - `JWT_EXPIRES_DAYS=7`
+5. Depois do deploy, use a URL HTTPS gerada pelo Render como `EXPO_PUBLIC_API_URL`.
