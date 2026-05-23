@@ -51,6 +51,7 @@ Adaptar o backend para usar `DATABASE_URL`/Postgres em vez de `mock_data.py`.
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
 4. Em **Environment Variables**, adicione:
+   - `PYTHON_VERSION=3.12.8`
    - `DATABASE_URL`
    - `JWT_SECRET`
    - `JWT_EXPIRES_DAYS=7`
