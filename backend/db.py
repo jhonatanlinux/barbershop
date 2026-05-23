@@ -27,7 +27,7 @@ def mock_data_enabled() -> bool:
 @contextmanager
 def get_conn():
     if not DATABASE_URL:
-        raise RuntimeError("DATABASE_URL nao configurado")
+        raise RuntimeError("DATABASE_URL não configurado")
     with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
         yield conn
 

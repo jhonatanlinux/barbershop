@@ -22,7 +22,7 @@ async def lancar_corte(body: CorteBody, _: dict = Depends(require_admin)):
         with get_conn() as conn:
             cliente = conn.execute("select * from clientes where cpf = %s", (cpf,)).fetchone()
             if not cliente:
-                raise HTTPException(404, "Cliente nao encontrado")
+                raise HTTPException(404, "Cliente não encontrado")
             cliente = normalize_cliente(cliente)
             is_mensalista = cliente["tipo"] == "mensalista"
             cfg_rows = conn.execute(
@@ -51,7 +51,7 @@ async def lancar_corte(body: CorteBody, _: dict = Depends(require_admin)):
 
     cliente = get_cliente(cpf)
     if not cliente:
-        raise HTTPException(404, "Cliente nao encontrado")
+        raise HTTPException(404, "Cliente não encontrado")
 
     is_mensalista = cliente["tipo"] == "mensalista"
     pontos = CONFIG["pontos_mensalista"]["valor"] if is_mensalista else CONFIG["pontos_por_corte"]["valor"]

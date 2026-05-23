@@ -46,13 +46,13 @@ async def login_cliente(body: LoginClienteBody):
             cliente = conn.execute("select * from clientes where cpf = %s", (cpf,)).fetchone()
         cliente = normalize_cliente(cliente)
         if not cliente:
-            raise HTTPException(404, "CPF nao cadastrado. Fale com a barbearia.")
+            raise HTTPException(404, "CPF não cadastrado. Fale com a barbearia.")
         token = criar_token({"tipo": "cliente", "cpf": cliente["cpf"]})
         return {"token": token, "tipo": "cliente", "nome": cliente["nome"], "pontos": cliente["pontos"]}
 
     cliente = get_cliente(cpf)
     if not cliente:
-        raise HTTPException(404, "CPF nao cadastrado. Fale com a barbearia.")
+        raise HTTPException(404, "CPF não cadastrado. Fale com a barbearia.")
     token = criar_token({"tipo": "cliente", "cpf": cliente["cpf"]})
     return {"token": token, "tipo": "cliente", "nome": cliente["nome"], "pontos": cliente["pontos"]}
 
@@ -129,7 +129,7 @@ async def salvar_admin(body: AdminPermissaoBody, _: dict = Depends(require_super
     with get_conn() as conn:
         cliente = conn.execute("select cpf from clientes where cpf = %s", (cpf,)).fetchone()
         if not cliente:
-            raise HTTPException(404, "Cliente nao encontrado")
+            raise HTTPException(404, "Cliente não encontrado")
         row = conn.execute(
             """
             insert into admin_permissoes (cpf, role, senha_hash, ativo)
@@ -159,5 +159,5 @@ async def desativar_admin(cpf: str, _: dict = Depends(require_superadmin)):
         ).fetchone()
         conn.commit()
     if not row:
-        raise HTTPException(404, "Admin nao encontrado")
+        raise HTTPException(404, "Admin não encontrado")
     return dict(row)

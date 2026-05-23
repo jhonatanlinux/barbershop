@@ -4,6 +4,16 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "App.js"
+      - "app.json"
+      - "eas.json"
+      - "package.json"
+      - "package-lock.json"
+      - "src/**"
+      - "assets/**"
+      - "scripts/prepare-build-version.js"
+      - ".github/workflows/android-apk.yml"
   workflow_dispatch:
 
 jobs:

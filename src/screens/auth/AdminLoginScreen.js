@@ -34,7 +34,7 @@ export default function AdminLoginScreen({ navigation }) {
     try {
       await loginAdmin(rawCpf, senha);
     } catch (e) {
-      setError(e.message || "Credenciais invalidas.");
+      setError(e.message || "Credenciais inválidas.");
     } finally {
       setLoading(false);
     }
@@ -100,7 +100,7 @@ export default function AdminLoginScreen({ navigation }) {
               onPress={() => navigation.goBack()}
               style={s.backLink}
             >
-              <Text style={s.backText}>Voltar para area do cliente</Text>
+              <Text style={s.backText}>Voltar para área do cliente</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

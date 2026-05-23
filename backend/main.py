@@ -50,7 +50,7 @@ async def block_mock_data_in_production(request, call_next):
         return JSONResponse(
             status_code=503,
             content={
-                "detail": "Banco de dados nao configurado no ambiente de producao.",
+                "detail": "Banco de dados não configurado no ambiente de produção.",
             },
         )
     return await call_next(request)
@@ -78,7 +78,7 @@ async def health():
             content={
                 "status": "unhealthy",
                 "database": False,
-                "detail": "DATABASE_URL nao configurado",
+                "detail": "DATABASE_URL não configurado",
             },
         )
     return {"status": "healthy", "database": using_database()}

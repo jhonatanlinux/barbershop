@@ -24,18 +24,18 @@ export default function ClienteLoginScreen({ navigation }) {
     const raw = cpf.replace(/\D/g, "");
     setError("");
     if (raw.length !== 11) {
-      setError("Digite um CPF com 11 dgitos.");
+      setError("Digite um CPF com 11 dígitos.");
       return;
     }
     if (!validarCPF(raw)) {
-      setError("CPF invlido. Verifique os nmeros.");
+      setError("CPF inválido. Verifique os números.");
       return;
     }
     setLoading(true);
     try {
       await loginCliente(raw);
     } catch (e) {
-      setError(e.message || "CPF no cadastrado. Fale com a barbearia.");
+      setError(e.message || "CPF não cadastrado. Fale com a barbearia.");
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ export default function ClienteLoginScreen({ navigation }) {
             </View>
             <TouchableOpacity onPress={() => navigation.navigate("AdminLogin")}>
               <Text style={s.adminLink}>
-                Admin? <Text style={{ color: C.gold }}>Acessar painel ?</Text>
+                Admin? <Text style={{ color: C.gold }}>Acessar painel</Text>
               </Text>
             </TouchableOpacity>
           </View>

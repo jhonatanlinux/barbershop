@@ -34,7 +34,7 @@ import {
   semanaDoPlano,
 } from "../../utils";
 import { CustomAlert } from "../../components/CustomAlert";
-const TABS = ["Catlogo", "Solicitaes", "Histrico"];
+const TABS = ["Catálogo", "Solicitações", "Histórico"];
 const CAT_ORDER = ["corte", "barba", "bebida", "produto"];
 const CAT_LABEL = {
   corte: "Cortes",
@@ -140,7 +140,7 @@ ${fmtCPF(cliente.cpf)}`}
                 {cliente.pontos}
               </Text>
               <Text style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
-                Use seus pontos para solicitar premios no catalogo.
+                Use seus pontos para solicitar prêmios no catálogo.
               </Text>
             </View>
             {cliente.tipo === "mensalista" && (
@@ -236,7 +236,7 @@ function PlanoStatusItem({ ok, label }) {
           color: ok === true ? C.greenText : ok === false ? C.muted : C.gold,
         }}
       >
-        {ok === null ? label.split(" ")[1] : ok ? "?" : "?"}
+        {ok === null ? label.split(" ")[1] : ok ? "OK" : "--"}
       </Text>
       <Text
         style={{
@@ -269,7 +269,7 @@ function CatalogoTab({ catalogo, pontos, onSolicitar }) {
     <View style={{ paddingTop: S.md }}>
       <Card style={{ marginBottom: S.md }} amber>
         <Text style={{ color: C.amberText, fontSize: 12 }}>
-          Ao solicitar, seus pontos ficam reservados at a barbearia autorizar.
+          Ao solicitar, seus pontos ficam reservados até a barbearia autorizar.
         </Text>
       </Card>
       {CAT_ORDER.map((cat) => {
@@ -400,8 +400,8 @@ function SolicitsTab({ solicits }) {
   if (!solicits.length)
     return (
       <Empty
-        title="Nenhuma solicitao"
-        sub="Solicite itens do catlogo com seus pontos"
+        title="Nenhuma solicitação"
+        sub="Solicite itens do catálogo com seus pontos"
       />
     );
   return (
@@ -451,7 +451,7 @@ function SolicitsTab({ solicits }) {
 function HistoricoTab({ historico }) {
   if (!historico.length)
     return (
-      <Empty title="Sem histrico" sub="Seu histrico de pontos aparecer aqui" />
+      <Empty title="Sem histórico" sub="Seu histórico de pontos aparecerá aqui" />
     );
   return (
     <Card style={{ padding: 0, overflow: "hidden", marginTop: S.md }}>

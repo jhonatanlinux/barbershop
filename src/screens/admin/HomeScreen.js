@@ -35,6 +35,9 @@ import {
   autorizarResgate,
   recusarResgate,
   criarCliente,
+  atualizarCliente,
+  removerCliente,
+  registrarPagamento,
   setConfig as apiSetConfig,
 } from "../../api";
 import {
@@ -51,7 +54,7 @@ import {
 } from "../../utils";
 import { CustomAlert } from "../../components/CustomAlert";
 const TABS = [
-  "Solicitaes",
+  "Solicitações",
   "Agenda",
   "Clientes",
   "Mensalistas",
@@ -95,7 +98,7 @@ export default function AdminHomeScreen({ navigation }) {
     load();
   };
   const onAutorizar = (id) => {
-    CustomAlert.alert("Autorizar resgate", "Confirmar autorizao?", [
+    CustomAlert.alert("Autorizar resgate", "Confirmar autorização?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Autorizar",
@@ -111,7 +114,7 @@ export default function AdminHomeScreen({ navigation }) {
     ]);
   };
   const onRecusar = (id) => {
-    CustomAlert.alert("Recusar", "Os pontos sero devolvidos ao cliente.", [
+    CustomAlert.alert("Recusar", "Os pontos serão devolvidos ao cliente.", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Recusar",
@@ -130,15 +133,67 @@ export default function AdminHomeScreen({ navigation }) {
   const onLancar = async (cpf, tipo = "corte") => {
     try {
       await lancarCorte(cpf, tipo);
-      CustomAlert.alert("? Lanado!", "Pontos adicionados.");
+      CustomAlert.alert("Lançado!", "Pontos adicionados.");
       load();
     } catch (e) {
       CustomAlert.alert("Erro", e.message);
     }
   };
+  const onToggleMensalista = (cliente) => {
+    const ativar = cliente.tipo !== "mensalista";
+    const titulo = ativar ? "Ativar mensalista" : "Remover mensalista";
+    const mensagem = ativar
+      ? `Marcar ${cliente.nome} como mensalista a partir de hoje?`
+      : `Desmarcar ${cliente.nome} como mensalista?`;
+    CustomAlert.alert(titulo, mensagem, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: ativar ? "Ativar" : "Desmarcar",
+        style: ativar ? "default" : "destructive",
+        onPress: async () => {
+          try {
+            if (ativar) {
+              const hoje = new Date().toISOString().split("T")[0];
+              await registrarPagamento(cliente.cpf, {
+                data_pagamento: hoje,
+                plano_tipo: cliente.plano_tipo || "completo",
+                semanas_barba: cliente.semanas_barba || "impar",
+              });
+            } else {
+              await atualizarCliente(cliente.cpf, { tipo: "regular" });
+            }
+            load();
+          } catch (e) {
+            CustomAlert.alert("Erro", e.message);
+          }
+        },
+      },
+    ]);
+  };
+  const onRemoverCliente = (cliente) => {
+    CustomAlert.alert(
+      "Remover cliente",
+      `Remover ${cliente.nome}? Esta ação apaga o cliente e seus registros vinculados.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Remover",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await removerCliente(cliente.cpf);
+              load();
+            } catch (e) {
+              CustomAlert.alert("Erro", e.message);
+            }
+          },
+        },
+      ],
+    );
+  };
   if (loading) return <Loading />;
   const tabLabels = [
-    pendentes.length > 0 ? `Solicitaes (${pendentes.length})` : "Solicitaes",
+    pendentes.length > 0 ? `Solicitações (${pendentes.length})` : "Solicitações",
     "Agenda",
     "Clientes",
     "Mensalistas",
@@ -243,6 +298,8 @@ export default function AdminHomeScreen({ navigation }) {
             clientes={clientes}
             onLancar={onLancar}
             onVer={(cpf) => navigation.navigate("ClienteDetalhe", { cpf })}
+            onToggleMensalista={onToggleMensalista}
+            onRemover={onRemoverCliente}
           />
         )}
         {tab === 3 && (
@@ -289,7 +346,7 @@ function SolicitsTab({ pendentes, historico, onAutorizar, onRecusar }) {
       {pendentes.length === 0 && (
         <Card green style={{ marginBottom: S.md }}>
           <Text style={{ color: C.greenText, fontSize: 13 }}>
-            Nenhuma solicitao pendente.
+            Nenhuma solicitação pendente.
           </Text>
         </Card>
       )}
@@ -344,7 +401,7 @@ function SolicitsTab({ pendentes, historico, onAutorizar, onRecusar }) {
       ))}
       {historico.length > 0 && (
         <>
-          <SectionTitle style={{ marginTop: S.md }}>Histrico</SectionTitle>
+          <SectionTitle style={{ marginTop: S.md }}>Histórico</SectionTitle>
           <Card style={{ padding: 0, overflow: "hidden" }}>
             {historico.slice(0, 20).map((s, i) => (
               <View
@@ -382,6 +439,10 @@ function SolicitsTab({ pendentes, historico, onAutorizar, onRecusar }) {
                   <Text style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
                     {s.cliente_nome}
                     {s.pontos_usados} pts
+                    {s.admin_nome
+                      ? `
+${s.status === "autorizado" ? "Autorizado" : "Recusado"} por ${s.admin_nome}`
+                      : ""}
                   </Text>
                 </View>
               </View>
@@ -429,7 +490,7 @@ function AgendaTab({ hoje, proximos }) {
       )}
       {proximos.length > 0 && (
         <>
-          <SectionTitle style={{ marginTop: S.md }}>Prximos</SectionTitle>
+          <SectionTitle style={{ marginTop: S.md }}>Próximos</SectionTitle>
           <Card style={{ padding: 0, overflow: "hidden" }}>
             {proximos.map((s, i) => (
               <View
@@ -474,7 +535,13 @@ function AgendaTab({ hoje, proximos }) {
   );
 }
 // -- ClientesTab -------------------------------------------
-function ClientesTab({ clientes, onLancar, onVer }) {
+function ClientesTab({
+  clientes,
+  onLancar,
+  onVer,
+  onToggleMensalista,
+  onRemover,
+}) {
   const [busca, setBusca] = useState("");
   const lista = busca
     ? clientes.filter(
@@ -499,6 +566,7 @@ function ClientesTab({ clientes, onLancar, onVer }) {
             style={{
               flexDirection: "row",
               alignItems: "center",
+              flexWrap: "wrap",
               gap: S.sm,
               padding: S.sm,
               paddingHorizontal: S.md,
@@ -535,7 +603,26 @@ function ClientesTab({ clientes, onLancar, onVer }) {
               small
               onPress={() => onLancar(c.cpf)}
             />
+            <TouchableOpacity
+              onPress={() => onToggleMensalista(c)}
+              style={[cliCheck.base, c.tipo === "mensalista" && cliCheck.on]}
+            >
+              <Text
+                style={[
+                  cliCheck.text,
+                  c.tipo === "mensalista" && cliCheck.textOn,
+                ]}
+              >
+                {c.tipo === "mensalista" ? "Mensalista" : "Regular"}
+              </Text>
+            </TouchableOpacity>
             <Button title="Ver" small onPress={() => onVer(c.cpf)} />
+            <Button
+              title="Remover"
+              variant="red"
+              small
+              onPress={() => onRemover(c)}
+            />
           </View>
         ))}
       </Card>
@@ -597,7 +684,7 @@ function MensalistasTab({ mensalistas, onLancar, onVer, config }) {
           ))}
         </View>
         <Text style={{ fontSize: 11, color: C.muted, marginTop: S.sm }}>
-          +{config.pontos_mensalista} pts/sesso - {config.dias_plano} dias
+          +{config.pontos_mensalista} pts/sessão - {config.dias_plano} dias
         </Text>
       </Card>
       {mensalistas.map((c) => {
@@ -716,7 +803,7 @@ function MensStatusBox({ ok, label, val, gold }) {
                   : C.cream2,
         }}
       >
-        {ok === null ? val : ok ? "?" : "?"}
+        {ok === null ? val : ok ? "OK" : "--"}
       </Text>
       <Text
         style={{ fontSize: 9, color: C.muted, marginTop: 1, fontWeight: "600" }}
@@ -748,11 +835,11 @@ function CadastrarTab({ onSuccess }) {
   const cadastrar = async () => {
     const raw = cpf.replace(/\D/g, "");
     if (raw.length !== 11) {
-      CustomAlert.alert("Erro", "CPF invlido");
+      CustomAlert.alert("Erro", "CPF inválido");
       return;
     }
     if (!tel) {
-      CustomAlert.alert("Erro", "Telefone obrigatrio");
+      CustomAlert.alert("Erro", "Telefone obrigatório");
       return;
     }
     setLoading(true);
@@ -856,27 +943,27 @@ function ConfigTab({ config }) {
   const { setConfig } = useAuth();
   const items = [
     { k: "modulo_mensalista", lbl: "Plano Mensalista", tipo: "boolean" },
-    { k: "modulo_catalogo", lbl: "Catlogo de Resgates", tipo: "boolean" },
-    { k: "validacao_cpf", lbl: "Validao CPF", tipo: "boolean" },
+    { k: "modulo_catalogo", lbl: "Catálogo de Resgates", tipo: "boolean" },
+    { k: "validacao_cpf", lbl: "Validação CPF", tipo: "boolean" },
     { k: "limite_solicitacoes", lbl: "Limite de pendentes", tipo: "integer" },
     { k: "pontos_por_corte", lbl: "Pts por corte (regular)", tipo: "integer" },
     {
       k: "pontos_mensalista",
-      lbl: "Pts por sesso (mensalista)",
+      lbl: "Pts por sessão (mensalista)",
       tipo: "integer",
     },
-    { k: "preco_mensalista", lbl: "Preo Completo (R$)", tipo: "integer" },
+    { k: "preco_mensalista", lbl: "Preço Completo (R$)", tipo: "integer" },
     {
       k: "preco_mensalista_sem_barba",
-      lbl: "Preo Sem Barba (R$)",
+      lbl: "Preço Sem Barba (R$)",
       tipo: "integer",
     },
     {
       k: "preco_mensalista_so_barba",
-      lbl: "Preo S Barba (R$)",
+      lbl: "Preço Só Barba (R$)",
       tipo: "integer",
     },
-    { k: "dias_plano", lbl: "Durao do plano (dias)", tipo: "integer" },
+    { k: "dias_plano", lbl: "Duração do plano (dias)", tipo: "integer" },
     { k: "nome_barbearia", lbl: "Nome da barbearia", tipo: "string" },
   ];
   const update = async (k, v) => {
@@ -989,6 +1076,19 @@ const inp_s = StyleSheet.create({
     marginBottom: S.sm,
     fontSize: 14,
   },
+});
+const cliCheck = StyleSheet.create({
+  base: {
+    paddingVertical: 6,
+    paddingHorizontal: 9,
+    borderRadius: R.sm,
+    borderWidth: 1,
+    borderColor: C.border2,
+    backgroundColor: C.surface2,
+  },
+  on: { borderColor: C.purpleText, backgroundColor: C.purpleBg },
+  text: { color: C.muted, fontSize: 11, fontWeight: "700" },
+  textOn: { color: C.purpleText },
 });
 const cfg_inp = StyleSheet.create({
   inp: {

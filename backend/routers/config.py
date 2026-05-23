@@ -38,11 +38,11 @@ async def atualizar(body: ConfigUpdate, _: dict = Depends(require_admin)):
             ).fetchone()
             conn.commit()
         if not row:
-            raise HTTPException(404, f"Chave '{body.chave}' nao encontrada")
+            raise HTTPException(404, f"Chave '{body.chave}' não encontrada")
         return row_to_dict(row)
 
     if body.chave not in CONFIG:
-        raise HTTPException(404, f"Chave '{body.chave}' nao encontrada")
+        raise HTTPException(404, f"Chave '{body.chave}' não encontrada")
 
     tipo = CONFIG[body.chave]["tipo"]
     if tipo == "boolean":

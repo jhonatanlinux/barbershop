@@ -44,7 +44,7 @@ export default function ClienteDetalheScreen({ route }) {
   const onLancar = async (tipo) => {
     try {
       await lancarCorte(cpf, tipo);
-      CustomAlert.alert("Lancado!", "Pontos adicionados.");
+      CustomAlert.alert("Lançado!", "Pontos adicionados.");
       load();
     } catch (e) {
       CustomAlert.alert("Erro", e.message);
@@ -125,12 +125,12 @@ export default function ClienteDetalheScreen({ route }) {
           >
             <Text style={{ color: C.amberText, fontSize: 12 }}>
               Corte:{" "}
-              {podeCorte(cliente) ? "? Disponvel" : "? J realizado esta semana"}
+              {podeCorte(cliente) ? "Disponível" : "Já realizado esta semana"}
               {"\n"}
               Barba:{" "}
               {podeBarba(cliente)
-                ? "? Disponvel"
-                : "? No disponvel esta semana"}
+                ? "Disponível"
+                : "Não disponível esta semana"}
             </Text>
           </View>
         )}
@@ -158,7 +158,7 @@ export default function ClienteDetalheScreen({ route }) {
             </>
           ) : (
             <Button
-              title="? Lanar +10 pts"
+              title="Lançar +10 pts"
               variant="gold"
               onPress={() => onLancar("corte")}
               style={{ flex: 1 }}
@@ -166,9 +166,9 @@ export default function ClienteDetalheScreen({ route }) {
           )}
         </View>
       </Card>
-      <SectionTitle>Histrico de Pontos</SectionTitle>
+      <SectionTitle>Histórico de Pontos</SectionTitle>
       {(cliente.historico || []).length === 0 ? (
-        <Empty title="Sem histrico" />
+        <Empty title="Sem histórico" />
       ) : (
         <Card style={{ padding: 0, overflow: "hidden" }}>
           {(cliente.historico || []).slice(0, 30).map((h, i) => (

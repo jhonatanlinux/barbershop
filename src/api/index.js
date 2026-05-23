@@ -20,13 +20,14 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (res) => res.data,
   (err) => {
-    const msg = err.response?.data?.detail || err.message || "Erro de conexao";
+    const msg = err.response?.data?.detail || err.message || "Erro de conexão";
     return Promise.reject(new Error(msg));
   },
 );
 const get = (url) => api.get(url);
 const post = (url, data) => api.post(url, data);
 const patch = (url, data) => api.patch(url, data);
+const del = (url) => api.delete(url);
 export const loginCliente = (cpf) => post("/auth/cliente", { cpf });
 export const loginAdmin = (cpf, senha) => post("/auth/admin", { cpf, senha });
 export const getMe = () => get("/auth/me");
@@ -34,6 +35,7 @@ export const getClientes = () => get("/clientes");
 export const getCliente = (cpf) => get(`/clientes/${cpf}`);
 export const criarCliente = (data) => post("/clientes", data);
 export const atualizarCliente = (cpf, data) => patch(`/clientes/${cpf}`, data);
+export const removerCliente = (cpf) => del(`/clientes/${cpf}`);
 export const lancarCorte = (cpf, tipo = "corte") =>
   post("/cortes", { cpf, tipo_servico: tipo });
 export const solicitarResgate = (itemId) =>

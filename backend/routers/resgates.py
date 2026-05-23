@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from auth_utils import require_admin, require_cliente
-from db import get_conn, row_to_dict, rows_to_list, using_database
+from db import get_conn, rows_to_list, using_database
 from mock_data import CONFIG, RESGATES, add_historico, get_catalogo_item, get_cliente, get_resgate, next_resgate_id
 
 router = APIRouter()
@@ -32,14 +32,14 @@ async def solicitar(body: ResgateBody, payload: dict = Depends(require_cliente))
     item = get_catalogo_item(body.item_id)
 
     if not cliente:
-        raise HTTPException(404, "Cliente nao encontrado")
+        raise HTTPException(404, "Cliente não encontrado")
     if not item or not item["ativo"]:
         raise HTTPException(400, "Item indisponivel")
 
     limite = CONFIG["limite_solicitacoes"]["valor"]
     pendentes = [resgate for resgate in RESGATES if resgate["cpf"] == cpf and resgate["status"] == "pendente"]
     if limite > 0 and len(pendentes) >= limite:
-        raise HTTPException(400, f"Voce ja tem {len(pendentes)} solicitacao(oes) pendente(s)")
+        raise HTTPException(400, f"Você já tem {len(pendentes)} solicitação(ões) pendente(s)")
 
     if cliente["pontos"] < item["custo_pontos"]:
         raise HTTPException(
@@ -105,22 +105,54 @@ async def historico(_: dict = Depends(require_admin)):
 
 
 @router.patch("/{id}/autorizar")
-async def autorizar(id: int, body: AutorizarBody, _: dict = Depends(require_admin)):
+async def autorizar(id: int, body: AutorizarBody, admin: dict = Depends(require_admin)):
     if using_database():
         with get_conn() as conn:
-            result = conn.execute(
-                "select fn_autorizar_resgate(%s, %s, %s) as data",
-                (id, _.get("id"), body.data_agenda),
+            resgate = conn.execute(
+                """
+                select r.*, ci.nome as item_nome
+                from resgates r
+                join catalogo_itens ci on ci.id = r.item_id
+                where r.id = %s and r.status = 'pendente'
+                for update
+                """,
+                (id,),
             ).fetchone()
+            if not resgate:
+                raise HTTPException(400, "Resgate não encontrado ou já processado")
+            conn.execute(
+                """
+                update resgates
+                set status = 'autorizado',
+                    data_agenda = %s,
+                    admin_cpf = %s,
+                    admin_nome = %s,
+                    processed_at = now()
+                where id = %s
+                """,
+                (body.data_agenda, admin.get("cpf"), admin.get("nome"), id),
+            )
+            descricao = f"Resgate autorizado por {admin.get('nome') or 'administrador'}: {resgate['item_nome']}"
+            if body.data_agenda:
+                descricao = f"{descricao} - agendado para {body.data_agenda}"
+            conn.execute(
+                """
+                insert into pontos_historico (cpf, tipo, pontos, descricao, ref_id)
+                values (%s, 'resgate', %s, %s, %s)
+                """,
+                (resgate["cpf"], -resgate["pontos_usados"], descricao, id),
+            )
             conn.commit()
-        return row_to_dict(result)["data"]
+        return {"status": "autorizado", "data_agenda": body.data_agenda}
 
     resgate = get_resgate(id)
     if not resgate or resgate["status"] != "pendente":
-        raise HTTPException(400, "Resgate nao encontrado ou ja processado")
+        raise HTTPException(400, "Resgate não encontrado ou já processado")
 
     resgate["status"] = "autorizado"
     resgate["data_agenda"] = body.data_agenda
+    resgate["admin_cpf"] = admin.get("cpf")
+    resgate["admin_nome"] = admin.get("nome")
     descricao = f"Resgate: {resgate['item_nome']}"
     if body.data_agenda:
         descricao = f"{descricao} Agendado {body.data_agenda}"
@@ -129,21 +161,58 @@ async def autorizar(id: int, body: AutorizarBody, _: dict = Depends(require_admi
 
 
 @router.patch("/{id}/recusar")
-async def recusar(id: int, _: dict = Depends(require_admin)):
+async def recusar(id: int, admin: dict = Depends(require_admin)):
     if using_database():
         with get_conn() as conn:
-            result = conn.execute(
-                "select fn_recusar_resgate(%s, %s, null) as data",
-                (id, _.get("id")),
+            resgate = conn.execute(
+                """
+                select r.*, ci.nome as item_nome
+                from resgates r
+                join catalogo_itens ci on ci.id = r.item_id
+                where r.id = %s and r.status = 'pendente'
+                for update
+                """,
+                (id,),
             ).fetchone()
+            if not resgate:
+                raise HTTPException(400, "Resgate não encontrado ou já processado")
+            conn.execute(
+                """
+                update resgates
+                set status = 'recusado',
+                    admin_cpf = %s,
+                    admin_nome = %s,
+                    processed_at = now()
+                where id = %s
+                """,
+                (admin.get("cpf"), admin.get("nome"), id),
+            )
+            conn.execute(
+                "update clientes set pontos = pontos + %s where cpf = %s",
+                (resgate["pontos_usados"], resgate["cpf"]),
+            )
+            conn.execute(
+                """
+                insert into pontos_historico (cpf, tipo, pontos, descricao, ref_id)
+                values (%s, 'estorno', %s, %s, %s)
+                """,
+                (
+                    resgate["cpf"],
+                    resgate["pontos_usados"],
+                    f"Resgate recusado por {admin.get('nome') or 'administrador'}: {resgate['item_nome']} - pontos devolvidos",
+                    id,
+                ),
+            )
             conn.commit()
-        return row_to_dict(result)["data"]
+        return {"status": "recusado", "pontos_devolvidos": resgate["pontos_usados"]}
 
     resgate = get_resgate(id)
     if not resgate or resgate["status"] != "pendente":
-        raise HTTPException(400, "Resgate nao encontrado ou ja processado")
+        raise HTTPException(400, "Resgate não encontrado ou já processado")
 
     resgate["status"] = "recusado"
+    resgate["admin_cpf"] = admin.get("cpf")
+    resgate["admin_nome"] = admin.get("nome")
     cliente = get_cliente(resgate["cpf"])
     if cliente:
         cliente["pontos"] += resgate["pontos_usados"]

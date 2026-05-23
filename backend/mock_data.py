@@ -71,7 +71,7 @@ CATALOGO = [
     {"id": 3, "nome": "Barba Gratis", "descricao": "Modelagem e acabamento de barba", "custo_pontos": 60, "categoria": "barba", "ativo": True},
     {"id": 4, "nome": "Cerveja Gelada", "descricao": "Uma Heineken gelada no atendimento", "custo_pontos": 30, "categoria": "bebida", "ativo": True},
     {"id": 5, "nome": "Refrigerante", "descricao": "Lata gelada a sua escolha", "custo_pontos": 15, "categoria": "bebida", "ativo": True},
-    {"id": 6, "nome": "Zacca Pomada Matte", "descricao": "Fixacao forte, acabamento opaco", "custo_pontos": 50, "categoria": "produto", "ativo": True},
+    {"id": 6, "nome": "Zacca Pomada Matte", "descricao": "Fixação forte, acabamento opaco", "custo_pontos": 50, "categoria": "produto", "ativo": True},
 ]
 
 RESGATES = [

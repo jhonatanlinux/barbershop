@@ -76,7 +76,7 @@ async def registrar_pagamento(cpf: str, body: PagamentoBody, _: dict = Depends(r
             ).fetchone()
             conn.commit()
         if not row:
-            raise HTTPException(404, "Cliente nao encontrado")
+            raise HTTPException(404, "Cliente não encontrado")
         return {
             "mensagem": "Pagamento registrado",
             "plano_inicio": row["plano_inicio"].isoformat(),
@@ -85,7 +85,7 @@ async def registrar_pagamento(cpf: str, body: PagamentoBody, _: dict = Depends(r
 
     cliente = get_cliente(cpf)
     if not cliente:
-        raise HTTPException(404, "Cliente nao encontrado")
+        raise HTTPException(404, "Cliente não encontrado")
 
     inicio = date.fromisoformat(body.data_pagamento)
     vencimento = inicio + timedelta(days=30)

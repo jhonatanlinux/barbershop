@@ -30,11 +30,11 @@ async def toggle(id: int, _: dict = Depends(require_admin)):
             ).fetchone()
             conn.commit()
         if not row:
-            raise HTTPException(404, "Item nao encontrado")
+            raise HTTPException(404, "Item não encontrado")
         return row_to_dict(row)
 
     item = next((catalogo_item for catalogo_item in CATALOGO if catalogo_item["id"] == id), None)
     if not item:
-        raise HTTPException(404, "Item nao encontrado")
+        raise HTTPException(404, "Item não encontrado")
     item["ativo"] = not item["ativo"]
     return {"id": id, "ativo": item["ativo"]}

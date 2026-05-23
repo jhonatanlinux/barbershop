@@ -82,6 +82,9 @@ create table resgates (
   status text not null default 'pendente' check (status in ('pendente', 'autorizado', 'recusado', 'expirado')),
   data_agenda date,
   admin_id bigint references admins(id),
+  admin_cpf text,
+  admin_nome text,
+  processed_at timestamptz,
   motivo_recusa text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -113,6 +116,7 @@ create index idx_cortes_cpf_created on cortes(cpf, created_at desc);
 create index idx_resgates_cpf_created on resgates(cpf, created_at desc);
 create index idx_resgates_status on resgates(status);
 create index idx_resgates_agenda on resgates(data_agenda) where data_agenda is not null;
+create index idx_resgates_processed_at on resgates(processed_at desc) where processed_at is not null;
 create index idx_historico_cpf_created on pontos_historico(cpf, created_at desc);
 
 create or replace function set_updated_at()
@@ -149,6 +153,9 @@ select
   r.pontos_usados,
   r.status,
   r.data_agenda,
+  r.admin_cpf,
+  r.admin_nome,
+  r.processed_at,
   r.motivo_recusa,
   r.created_at,
   r.updated_at
@@ -297,7 +304,8 @@ begin
   update resgates
   set status = 'autorizado',
       admin_id = p_admin_id,
-      data_agenda = p_data_agenda
+      data_agenda = p_data_agenda,
+      processed_at = now()
   where id = p_resgate_id;
 
   insert into pontos_historico (cpf, tipo, pontos, descricao, ref_id)
@@ -332,7 +340,8 @@ begin
   update resgates
   set status = 'recusado',
       admin_id = p_admin_id,
-      motivo_recusa = p_motivo
+      motivo_recusa = p_motivo,
+      processed_at = now()
   where id = p_resgate_id;
 
   update clientes
