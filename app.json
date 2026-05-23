@@ -23,11 +23,6 @@
       "expo-secure-store",
       "expo-asset",
       "expo-font"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "SEU-PROJECT-ID"
-      }
-    }
+    ]
   }
 }
