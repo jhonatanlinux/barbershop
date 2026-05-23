@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from passlib.hash import bcrypt
 from pydantic import BaseModel
@@ -7,6 +9,7 @@ from db import get_conn, normalize_cliente, using_database
 from mock_data import ADMINS, get_cliente
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class LoginClienteBody(BaseModel):
@@ -23,6 +26,16 @@ class AdminPermissaoBody(BaseModel):
     cpf: str
     senha: str
     role: str = "admin"
+
+
+def senha_admin_valida(senha: str, senha_hash: str | None) -> bool:
+    if not senha_hash:
+        return False
+    try:
+        return bcrypt.verify(senha, senha_hash.strip())
+    except Exception as exc:
+        logger.warning("Falha ao validar hash de admin: %s", exc)
+        return False
 
 
 @router.post("/cliente")
@@ -60,16 +73,17 @@ async def login_admin(body: LoginAdminBody):
                   ap.senha_hash,
                   c.nome
                 from admin_permissoes ap
-                join clientes c on c.cpf = ap.cpf
+                left join clientes c on c.cpf = ap.cpf
                 where ap.cpf = %s
                   and ap.ativo = true
                 """,
                 (login_id,),
             ).fetchone()
-        if not admin or not bcrypt.verify(body.senha, admin["senha_hash"]):
+        if not admin or not senha_admin_valida(body.senha, admin["senha_hash"]):
             raise HTTPException(401, "Credenciais invalidas")
-        token = criar_token({"tipo": "admin", "cpf": admin["cpf"], "role": admin["role"], "nome": admin["nome"]})
-        return {"token": token, "tipo": "admin", "cpf": admin["cpf"], "role": admin["role"], "nome": admin["nome"]}
+        nome = admin["nome"] or "Administrador"
+        token = criar_token({"tipo": "admin", "cpf": admin["cpf"], "role": admin["role"], "nome": nome})
+        return {"token": token, "tipo": "admin", "cpf": admin["cpf"], "role": admin["role"], "nome": nome}
 
     admin = next((item for item in ADMINS if item["email"] == login_id), None)
     if not admin or body.senha != admin["senha"]:
