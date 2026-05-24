@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { C, S, R } from "../../theme";
 import { Button, Input } from "../../components";
 import { useAuth } from "../../context/AuthContext";
+import { aquecerApi } from "../../api";
 import { maskCPF, validarCPF } from "../../utils";
 const logoSource = require("../../../assets/logo.png");
 export default function ClienteLoginScreen({ navigation }) {
@@ -20,6 +21,9 @@ export default function ClienteLoginScreen({ navigation }) {
   const [cpf, setCpf] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    aquecerApi();
+  }, []);
   const handleLogin = async () => {
     const raw = cpf.replace(/\D/g, "");
     setError("");

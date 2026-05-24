@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Input } from "../../components";
 import { useAuth } from "../../context/AuthContext";
+import { aquecerApi } from "../../api";
 import { C, R, S } from "../../theme";
 import { maskCPF } from "../../utils";
 
@@ -20,6 +21,9 @@ export default function AdminLoginScreen({ navigation }) {
   const [senha, setSenha] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    aquecerApi();
+  }, []);
 
   const handleLogin = async () => {
     const rawCpf = cpf.replace(/\D/g, "");

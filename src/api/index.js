@@ -1,13 +1,13 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 const DEFAULT_DEV_URL = "http://192.168.0.101:8000";
-const DEFAULT_PROD_URL = "https://api.cortefino.com.br";
+const DEFAULT_PROD_URL = "https://barbershop-api-356y.onrender.com";
 export const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   (__DEV__ ? DEFAULT_DEV_URL : DEFAULT_PROD_URL);
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 12000,
+  timeout: 65000,
   headers: { "Content-Type": "application/json" },
 });
 api.interceptors.request.use(async (config) => {
@@ -20,7 +20,12 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (res) => res.data,
   (err) => {
-    const msg = err.response?.data?.detail || err.message || "Erro de conexão";
+    const msg =
+      err.code === "ECONNABORTED"
+        ? "Servidor iniciando. Aguarde alguns segundos e tente novamente."
+        : err.message === "Network Error"
+          ? "Nao foi possivel conectar ao servidor. Verifique sua internet e tente novamente."
+          : err.response?.data?.detail || err.message || "Erro de conexao";
     return Promise.reject(new Error(msg));
   },
 );
@@ -30,6 +35,7 @@ const patch = (url, data) => api.patch(url, data);
 const del = (url) => api.delete(url);
 export const loginCliente = (cpf) => post("/auth/cliente", { cpf });
 export const loginAdmin = (cpf, senha) => post("/auth/admin", { cpf, senha });
+export const aquecerApi = () => api.get("/").catch(() => null);
 export const getMe = () => get("/auth/me");
 export const getAdmins = () => get("/auth/admins");
 export const salvarAdmin = (data) => post("/auth/admins", data);
